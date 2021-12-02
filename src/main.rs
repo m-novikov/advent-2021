@@ -28,7 +28,7 @@ impl Iterator for FileInputProvider {
     }
 }
 
-fn count_increases(input: impl Iterator<Item = String>, window_size: usize) -> u64 {
+fn count_increases(input: impl Iterator<Item = String>, window_size: usize) -> i64 {
     let mut cur: VecDeque<i64> = VecDeque::with_capacity(window_size + 1);
     let mut result = 0;
 
@@ -47,12 +47,41 @@ fn count_increases(input: impl Iterator<Item = String>, window_size: usize) -> u
     result
 }
 
+fn parse_cmd(cmd: &str) -> (i64, i64) {
+    let parts = cmd.split_whitespace().take(2).collect::<Vec<&str>>();
+    if let [cmd_name, change] = &parts[..] {
+        let change_val = change.parse::<i64>().unwrap();
+        return match *cmd_name {
+            "forward" => (change_val, 0),
+            "down" => (0, change_val),
+            "up" => (0, -change_val),
+            _ => panic!("Unknown command"),
+        };
+    }
+    panic!("Invalid command")
+}
+
+fn pilot(input: impl Iterator<Item = String>) -> i64 {
+    let mut horizonal_pos = 0;
+    let mut depth = 0;
+    let mut aim = 0;
+
+    for cmd in input {
+        let (hor_diff, aim_diff) = parse_cmd(&cmd);
+        aim += aim_diff;
+        horizonal_pos += hor_diff;
+        depth += hor_diff * aim;
+    }
+
+    horizonal_pos * depth
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let filename = &args[1];
     let provider = FileInputProvider::new(filename);
-    let increases: u64 = count_increases(provider, 3);
-    println!("{}", increases);
+    let result = pilot(provider);
+    println!("{}", result);
 }
 
 #[cfg(test)]
@@ -79,5 +108,33 @@ mod tests {
             count_increases(input.iter().map(|s| String::from(*s)), 3),
             5
         )
+    }
+
+    #[test]
+    fn day2_example_input() {
+        let input = vec![
+            "forward 5",
+            "down 5",
+            "forward 8",
+            "up 3",
+            "down 8",
+            "forward 2",
+        ];
+        assert_eq!(pilot(input.iter().map(|s| String::from(*s))), 900)
+    }
+
+    #[test]
+    fn day2_parse_cmd() {
+        let input = vec![
+            ("forward 5", (5, 0)),
+            ("down 5", (0, 5)),
+            ("forward 8", (8, 0)),
+            ("up 3", (0, -3)),
+            ("down 8", (0, 8)),
+            ("forward 2", (2, 0)),
+        ];
+        for (cmd, expect) in input.iter() {
+            assert_eq!(parse_cmd(cmd), *expect);
+        }
     }
 }
