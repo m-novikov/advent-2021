@@ -67,11 +67,11 @@ fn compute_metric(tree: &Vec<u32>, depth: usize, compare_fn: CompareFn) -> i64 {
     let mut cur = 0;
     let mut result = 0;
 
-    for idx in (0..depth) {
+    for idx in 0..depth {
         let left_val = tree[left_ptr(cur)];
         let right_val = tree[right_ptr(cur)];
 
-        if (left_val != 0 && compare_fn(left_val, right_val) || right_val == 0) {
+        if left_val != 0 && compare_fn(left_val, right_val) || right_val == 0 {
             cur = left_ptr(cur);
         } else {
             cur = right_ptr(cur);

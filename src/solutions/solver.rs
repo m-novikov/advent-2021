@@ -14,10 +14,10 @@ impl<'a, T: Iterator<Item = String>> SolverRegistry<'a, T> {
     }
 
     fn get_index(day: usize, part: usize) -> usize {
-        if (day > 25 || day < 1) {
+        if day > 25 || day < 1 {
             panic!("Day should be in range [1; 25]");
         }
-        if (part != 1 && part != 2) {
+        if part != 1 && part != 2 {
             panic!("Part should be either 1 or 2");
         }
         (day - 1) * 2 + part - 1
