@@ -1,7 +1,10 @@
-use std::collections::VecDeque;
+use regex::Regex;
+use solutions::*;
 use std::env;
 use std::fs::File;
 use std::io::{self, BufRead};
+
+pub mod solutions;
 
 struct FileInputProvider {
     lines: io::Lines<io::BufReader<File>>,
@@ -28,113 +31,33 @@ impl Iterator for FileInputProvider {
     }
 }
 
-fn count_increases(input: impl Iterator<Item = String>, window_size: usize) -> i64 {
-    let mut cur: VecDeque<i64> = VecDeque::with_capacity(window_size + 1);
-    let mut result = 0;
-
-    for value in input.map(|s| s.parse::<i64>().unwrap()) {
-        cur.push_back(value);
-        if cur.len() == window_size + 1 {
-            let cur_total = cur.range(1..).sum::<i64>();
-            let prev_total = cur.range(..cur.len() - 1).sum::<i64>();
-            if cur_total > prev_total {
-                result += 1;
-            }
-            cur.pop_front();
-        }
-    }
-
-    result
-}
-
-fn parse_cmd(cmd: &str) -> (i64, i64) {
-    let parts = cmd.split_whitespace().take(2).collect::<Vec<&str>>();
-    if let [cmd_name, change] = &parts[..] {
-        let change_val = change.parse::<i64>().unwrap();
-        return match *cmd_name {
-            "forward" => (change_val, 0),
-            "down" => (0, change_val),
-            "up" => (0, -change_val),
-            _ => panic!("Unknown command"),
-        };
-    }
-    panic!("Invalid command")
-}
-
-fn pilot(input: impl Iterator<Item = String>) -> i64 {
-    let mut horizonal_pos = 0;
-    let mut depth = 0;
-    let mut aim = 0;
-
-    for cmd in input {
-        let (hor_diff, aim_diff) = parse_cmd(&cmd);
-        aim += aim_diff;
-        horizonal_pos += hor_diff;
-        depth += hor_diff * aim;
-    }
-
-    horizonal_pos * depth
-}
-
 fn main() {
+    let mut solver_registry = solver::SolverRegistry::<FileInputProvider>::new();
+    solver_registry.register(1, 1, &day01::DaySolver { window_size: 1 });
+    solver_registry.register(1, 2, &day01::DaySolver { window_size: 3 });
+    solver_registry.register(2, 2, &day02::DaySolver {});
+    solver_registry.register(3, 1, &day03::GammaEpsilonRate {});
+    solver_registry.register(3, 2, &day03::O2CO2Stats {});
+
+    let re_day = Regex::new(r"day0*(?P<day>\d+)").unwrap();
     let args: Vec<String> = env::args().collect();
     let filename = &args[1];
+
+    let part = if args.len() == 3 {
+        args[2].parse::<usize>().unwrap()
+    } else {
+        2
+    };
+
+    let captures = re_day.captures(filename).unwrap();
+    let day = &captures["day"].parse::<usize>().unwrap();
+
+    println!("Day {} part {}", day, part);
     let provider = FileInputProvider::new(filename);
-    let result = pilot(provider);
+    let result = solver_registry
+        .get(*day, part)
+        .as_ref()
+        .expect("No solver")
+        .solver(provider);
     println!("{}", result);
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn day1_example_input_size_1() {
-        let input = vec![
-            "199", "200", "208", "210", "200", "207", "240", "269", "260", "263",
-        ];
-        assert_eq!(
-            count_increases(input.iter().map(|s| String::from(*s)), 1),
-            7
-        )
-    }
-
-    #[test]
-    fn day1_example_input_size_3() {
-        let input = vec![
-            "199", "200", "208", "210", "200", "207", "240", "269", "260", "263",
-        ];
-        assert_eq!(
-            count_increases(input.iter().map(|s| String::from(*s)), 3),
-            5
-        )
-    }
-
-    #[test]
-    fn day2_example_input() {
-        let input = vec![
-            "forward 5",
-            "down 5",
-            "forward 8",
-            "up 3",
-            "down 8",
-            "forward 2",
-        ];
-        assert_eq!(pilot(input.iter().map(|s| String::from(*s))), 900)
-    }
-
-    #[test]
-    fn day2_parse_cmd() {
-        let input = vec![
-            ("forward 5", (5, 0)),
-            ("down 5", (0, 5)),
-            ("forward 8", (8, 0)),
-            ("up 3", (0, -3)),
-            ("down 8", (0, 8)),
-            ("forward 2", (2, 0)),
-        ];
-        for (cmd, expect) in input.iter() {
-            assert_eq!(parse_cmd(cmd), *expect);
-        }
-    }
 }
