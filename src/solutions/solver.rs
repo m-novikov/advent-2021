@@ -3,13 +3,13 @@ pub trait Solver<T: Iterator<Item = String>> {
 }
 
 pub struct SolverRegistry<'a, T: Iterator<Item = String>> {
-    solvers: Vec<Option<&'a dyn Solver<T>>>,
+    solvers: [Option<&'a dyn Solver<T>>; 50],
 }
 
 impl<'a, T: Iterator<Item = String>> SolverRegistry<'a, T> {
     pub fn new() -> SolverRegistry<'a, T> {
         SolverRegistry::<T> {
-            solvers: (0..50).map(|_| None).collect(),
+            solvers: [None; 50],
         }
     }
 
@@ -23,10 +23,15 @@ impl<'a, T: Iterator<Item = String>> SolverRegistry<'a, T> {
         (day - 1) * 2 + part - 1
     }
 
+    // Register a solver for the day by putting it into the lookup table
     pub fn register(&mut self, day: usize, part: usize, solver: &'a dyn Solver<T>) {
+        if self.solvers[Self::get_index(day, part)].is_some() {
+            panic!("Solver for day {} part {} already registered!", day, part);
+        }
         self.solvers[Self::get_index(day, part)] = Some(solver);
     }
 
+    // Get a solver for day/part
     pub fn get(&self, day: usize, part: usize) -> &Option<&dyn Solver<T>> {
         &self.solvers[Self::get_index(day, part)]
     }
